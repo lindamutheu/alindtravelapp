@@ -21,29 +21,14 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
+from drf_yasg import openapi 
+
 from rest_framework.routers import DefaultRouter
 from .views import ListingViewSet, BookingViewSet, ReviewViewSet
 
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Alind Travel API",
-        default_version="v1",
-        description="API documentation for AlindTravelApp",
-        contact=openapi.Contact(email="lindamutheu5@gmail.com"),
-    ),
-    public=True,
-    permission_classes=(permissions.AllowAny,),
-)
+router = DefaultRouter()
+router.register(r'listings', ListingViewSet, basename='listing')
+router.register(r'bookings', BookingViewSet, basename='booking')
+router.register(r'reviews', ReviewViewSet, basename='review')
 
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("api/listings/", include("listings.urls")),
-    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
-    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
-]
-
-
-
-
-
+urlpatterns = router.urls

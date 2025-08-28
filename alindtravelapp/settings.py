@@ -95,12 +95,11 @@ WSGI_APPLICATION = 'alindtravelapp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': BASE_DIR / 'db.mysql',
-         'USER':env('DB_NAME'),
-         'PASSWORD':env('DB_PASSWORD'),
-         'USER':env('DB_USER'),
-         'HOST':env('DB_HOST'),
-         'PORT':env('DB_PORT'),
+        'NAME': 'alindtravel',
+         'PASSWORD':'StrongPass123!',
+         'USER':'alinduser',
+         'HOST':'127.0.0.1',
+         'PORT':'3306',
 
     }
 }
