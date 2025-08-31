@@ -10,3 +10,12 @@ def send_payment_confirmation_email(user_email, booking_id):
         [user_email],
         fail_silently=False,
     )
+
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,  # must be set in settings.py
+        [user_email],
+        fail_silently=False,
+    )
+    return f"Booking confirmation email sent to {user_email}"

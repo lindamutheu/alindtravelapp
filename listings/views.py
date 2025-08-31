@@ -13,6 +13,8 @@ from .models import Payment
 from .serializers import PaymentSerializer
 from .services import initiate_chapa_payment, verify_chapa_payment
 import uuid
+from .tasks import send_booking_confirmation_email  # import the task
+
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
@@ -47,6 +49,8 @@ class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
 
     def perform_create(self, serializer):
+
+        
         # Ensure the booking is tied to the logged-in user
         check_in = serializer.validated_data["check_in"]
         check_out = serializer.validated_data["check_out"]
@@ -65,7 +69,15 @@ class BookingViewSet(viewsets.ModelViewSet):
         if overlapping.exists():
             raise ValidationError("This listing is already booked for the selected dates.")
 
-        serializer.save(user=self.request.user)
+    booking = serializer.save(user=self.request.user)
+
+  #✅ Trigger Celery email task here
+    send_booking_confirmation_email.delay(
+        booking.user.email,
+        booking.listing.title,
+        str(booking.check_in),
+        str(booking.check_out),
+    )
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -111,9 +123,17 @@ class VerifyPaymentView(generics.GenericAPIView):
         if response.get("status") == "success" and response["data"]["status"] == "success":
             payment.status = "SUCCESS"
             payment.save()
+            
             # trigger background email here
+            send_booking_confirmation_email.delay(
+                payment.user.email,
+                payment.booking.listing.title,
+                str(payment.booking.check_in),
+                str(payment.booking.check_out),
+            )
             return Response({"message": "Payment verified successfully"}, status=200)
 
         payment.status = "FAILED"
         payment.save()
         return Response({"message": "Payment verification failed"}, status=400)
+
