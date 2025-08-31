@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Listing, Booking, Review
+from .models import Payment
+
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -52,3 +54,11 @@ class BookingSerializer(serializers.ModelSerializer):
         # ✅ ensure booking is tied to logged-in user
         validated_data["user"] = self.context["request"].user
         return super().create(validated_data)
+
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = "__all__"
+        read_only_fields = ["status", "created_at", "updated_at"]

@@ -6,6 +6,13 @@ from django.utils import timezone
 from .models import Listing, Booking, Review
 from .serializers import ListingSerializer, BookingSerializer, ReviewSerializer
 
+from rest_framework import generics, status
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from .models import Payment
+from .serializers import PaymentSerializer
+from .services import initiate_chapa_payment, verify_chapa_payment
+import uuid
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
@@ -73,3 +80,40 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 # Create your views here.
+
+class InitiatePaymentView(generics.GenericAPIView):
+    serializer_class = PaymentSerializer
+
+    def post(self, request, booking_id):
+        booking = get_object_or_404(Booking, id=booking_id)
+
+        payment = Payment.objects.create(
+            booking=booking,
+            user=request.user,
+            amount=booking.listing.price_per_night,  # or total calculation
+            chapa_tx_ref=str(uuid.uuid4())
+        )
+
+        callback_url = "https://yourdomain.com/api/payments/verify/"
+        response = initiate_chapa_payment(payment, callback_url)
+
+        if response.get("status") == "success":
+            return Response({"checkout_url": response["data"]["checkout_url"]}, status=200)
+
+        return Response(response, status=400)
+
+
+class VerifyPaymentView(generics.GenericAPIView):
+    def get(self, request, tx_ref):
+        payment = get_object_or_404(Payment, chapa_tx_ref=tx_ref)
+        response = verify_chapa_payment(tx_ref)
+
+        if response.get("status") == "success" and response["data"]["status"] == "success":
+            payment.status = "SUCCESS"
+            payment.save()
+            # trigger background email here
+            return Response({"message": "Payment verified successfully"}, status=200)
+
+        payment.status = "FAILED"
+        payment.save()
+        return Response({"message": "Payment verification failed"}, status=400)

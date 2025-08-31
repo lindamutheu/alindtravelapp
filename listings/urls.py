@@ -22,6 +22,8 @@ from django.urls import path, include
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi 
+from .views import InitiatePaymentView, VerifyPaymentView
+
 
 from rest_framework.routers import DefaultRouter
 from .views import ListingViewSet, BookingViewSet, ReviewViewSet
@@ -30,5 +32,9 @@ router = DefaultRouter()
 router.register(r'listings', ListingViewSet, basename='listing')
 router.register(r'bookings', BookingViewSet, basename='booking')
 router.register(r'reviews', ReviewViewSet, basename='review')
+
+path("initiate/<int:booking_id>/", InitiatePaymentView.as_view(), name="initiate-payment"),
+path("verify/<str:tx_ref>/", VerifyPaymentView.as_view(), name="verify-payment"),
+
 
 urlpatterns = router.urls
